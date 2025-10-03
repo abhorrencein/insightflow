@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@maplibre/maplibre-gl": "^4.0.0",
+    "maplibre-gl": "^4.0.0",
     "plotly.js-dist-min": "^2.24.1",
     "svelte": "^5.0.0"
   },
