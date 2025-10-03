@@ -10,7 +10,7 @@
   "dependencies": {
     "@maplibre/maplibre-gl": "^4.0.0",
     "plotly.js-dist-min": "^2.24.1",
-    "svelte": "^4.0.0"
+    "svelte": "^5.0.0"
   },
   "devDependencies": {
     "@sveltejs/kit": "^2.0.0",
