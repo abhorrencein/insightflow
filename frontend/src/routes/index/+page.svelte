@@ -97,4 +97,18 @@
     </div>
     
     <!-- Charts -->
-    <div class="mt-
+    <div class="mt-8">
+      <h3 class="font-semibold text-slate-900 mb-4">Key Variables</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {#each result.categorical_vars as var}
+          <div class="bg-white p-6 rounded-2xl border border-slate-200">
+            <h4 class="font-medium text-slate-900 mb-3">{var.name}</h4>
+            <div class="bg-slate-50 rounded-lg h-40 flex items-center justify-center text-slate-500">
+              Bar chart for {var.name}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+</div>
