@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsightFlow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-text { background: linear-gradient(90deg, #1e293b, #4f46e5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <div class="p-6 border-b border-slate-100">
+        <h1 class="text-xl font-bold gradient-text">InsightFlow</h1>
+        <p class="text-sm text-slate-500 mt-1">Survey Intelligence</p>
+      </div>
+      <nav class="px-4 py-6 flex-1">
+        <a href="#" class="flex items-center px-3 py-2.5 text-slate-900 bg-indigo-50 rounded-lg font-medium">
+          📤 Upload
+        </a>
+      </nav>
+      <div class="p-4 border-t border-slate-100">
+        <p class="text-xs text-slate-500">BCG-tier intelligence • All processing secure</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-8 max-w-7xl mx-auto">
+      <div class="mb-12">
+        <h2 class="text-3xl font-bold text-slate-900">Automated Survey Intelligence</h2>
+        <p class="text-slate-600 mt-2 max-w-2xl">
+          Upload your SurveyCTO export. We’ll clean, analyze, and visualize — in seconds.
+        </p>
+      </div>
+
+      <div id="upload-area" class="border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center bg-white hover:border-indigo-300 transition-colors cursor-pointer">
+        <div class="text-slate-500 mb-3 text-4xl">📤</div>
+        <p class="font-medium text-slate-900">Click to upload SurveyCTO XLSX</p>
+        <p class="text-sm text-slate-500 mt-1">or drag and drop</p>
+        <input type="file" id="file-input" accept=".xlsx" class="hidden" />
+      </div>
+
+      <div id="file-info" class="mt-4 hidden">
+        <p id="file-name" class="text-sm text-slate-600"></p>
+        <button id="process-btn" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+          Process Survey
+        </button>
+      </div>
+
+      <div id="error" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 hidden"></div>
+      
+      <div id="dashboard" class="hidden mt-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200">
+            <p class="text-sm text-slate-500">Responses</p>
+            <p id="response-count" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+          <div class="bg-white p-6 rounded-2xl border border-slate-200">
+            <p class="text-sm text-slate-500">High-Quality Fields</p>
+            <p id="completeness" class="text-2xl font-bold text-slate-900 mt-1">0%</p>
+          </div>
+          <div class="bg-white p-6 rounded-2xl border border-slate-200">
+            <p class="text-sm text-slate-500">Geotagged</p>
+            <p id="gps-status" class="text-2xl font-bold text-slate-900 mt-1">—</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+          <h3 class="font-semibold text-slate-900 mb-4">Key Variables</h3>
+          <div id="charts" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get your Render backend URL here
+    const BACKEND_URL = 'https://insightflow-backend.onrender.com/api/process';
+
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const processBtn = document.getElementById('process-btn');
+    const errorDiv = document.getElementById('error');
+    const dashboard = document.getElementById('dashboard');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('border-indigo-400', 'bg-indigo-50');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('border-indigo-400', 'bg-indigo-50');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('border-indigo-400', 'bg-indigo-50');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      if (!file.name.endsWith('.xlsx')) {
+        showError('Please upload a .xlsx file');
+        return;
+      }
+      fileName.textContent = file.name;
+      fileInfo.classList.remove('hidden');
+    }
+
+    processBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        errorDiv.classList.add('hidden');
+        processBtn.disabled = true;
+        processBtn.textContent = 'Processing...';
+
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.detail || 'Processing failed');
+        }
+
+        // Populate dashboard
+        document.getElementById('response-count').textContent = result.response_count.toLocaleString();
+        document.getElementById('completeness').textContent = Math.round(result.completeness * 100) + '%';
+        document.getElementById('gps-status').textContent = result.has_gps ? 'Yes' : 'No';
+
+        const charts = document.getElementById('charts');
+        charts.innerHTML = '';
+        result.categorical_vars.slice(0, 4).forEach(varObj => {
+          const div = document.createElement('div');
+          div.className = 'bg-slate-50 p-4 rounded-xl';
+          div.innerHTML = `
+            <h4 class="font-medium text-slate-900 mb-2">${varObj.name.replace(/_/g, ' ')}</h4>
+            <div class="text-slate-600 text-sm">Sample values: ${Array.from({length: Math.min(3, varObj.count)}, (_, i) => 'Value ' + (i+1)).join(', ')}</div>
+          `;
+          charts.appendChild(div);
+        });
+
+        uploadArea.classList.add('hidden');
+        fileInfo.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+
+      } catch (err) {
+        showError(err.message || 'Failed to process file');
+      } finally {
+        processBtn.disabled = false;
+        processBtn.textContent = 'Process Survey';
+      }
+    });
+
+    function showError(message) {
+      errorDiv.textContent = '❌ ' + message;
+      errorDiv.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
